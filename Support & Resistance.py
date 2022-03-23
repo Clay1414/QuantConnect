@@ -18,14 +18,13 @@ import statistics
 
 class stoch(QCAlgorithm):
 
+    #Algo constructor called once
     def Initialize(self):
         '''Initialise the data and resolution required, as well as the cash and start-end dates for your algorithm. All algorithms must initialized.'''
 
         self.SetStartDate(2020, 1, 1)    #Set Start Date
-        #self.SetEndDate(2021, 5, 17)      #Set End Date
+        
         self.SetCash(100000)             #Set Strategy Cash
-        #self.SetBrokerageModel(BrokerageName.AlphaStreams)
-
         self.sec = "ETHUSD"
         self.SetRiskManagement(MaximumDrawdownPercentPerSecurity(0.05))
         self.SetBrokerageModel(BrokerageName.Bitfinex, AccountType.Cash) 
@@ -46,7 +45,7 @@ class stoch(QCAlgorithm):
                  #self.ordering)
         
 
-
+    #Data pipeline
     def OnData(self, data):
         
         
@@ -60,7 +59,7 @@ class stoch(QCAlgorithm):
         '''OnData event is the primary entry point for your algorithm. Each new data point will be pumped in here.'''
 
 
-    
+    # Detection of support and resistance using historical prices
     def T_and_B(self):
         
         self.hist = self.History(self.Symbol(self.sec), self.period, Resolution.Daily).reset_index(level=0)
@@ -82,7 +81,7 @@ class stoch(QCAlgorithm):
         self.df1['bottom'] = " "
         self.df1['top']=" "
 
-
+    # Create dataFrames of tops and bottoms
         for i in range(len(self.df1)):
             try:
         
@@ -102,30 +101,24 @@ class stoch(QCAlgorithm):
         
         self.df1['l_pct_change']= (self.secClose-self.df1.low)/self.df1.low
         self.df1['h_pct_change'] = (self.secClose-self.df1.high)/self.df1.high
-
+        
         
         self.hdf =  self.df1[self.df1['top'] == 1] 
         self.bdf = self.df1[self.df1['bottom'] == 1]
         
-
-        #ordering
-        
-    
-        
+       
+        #Make sure there is data in DF
         if len(self.bdf) != 0:
  
             if self.Portfolio[self.sec].IsLong:
-                #self.Debug("already long")
                 pass
                     
             else:
-                
+                #if price is within 5% of support and there is a bullish doji or engulfing BUY!
                 for d in range(len(self.bdf.l_pct_change)):
                     
-                    
-                    
-                    if (0 < self.bdf.l_pct_change[d] < 0.05): #& (self.secClose > self.emaI.Current.Value):
-                        #self.Debug(f" bdf pct: {self.bdf.l_pct_change[d]} ds: {self.engulfingI.Current.Value}  e: {self.DojiStarI.Current.Value } day: {self.Time}")
+                    if (0 < self.bdf.l_pct_change[d] < 0.05): 
+                      
                         if (self.engulfingI.Current.Value == 1.0) or (self.DojiStarI.Current.Value == 1.0) or (self.DojiI.Current.Value == 1.0):
                             self.SetHoldings(self.sec, 1.0)
                             #self.Debug(f"bought {self.Time}")
@@ -135,26 +128,20 @@ class stoch(QCAlgorithm):
                             pass
                     else:
                         pass
-                        
-                        
-        else:
+          else:
             self.Debug("no bdf")
         
-        
-        
+        #check for top dataframe values
         if len(self.hdf) != 0:            
             
             if self.Portfolio[self.sec].Invested:
                 
                 
-            
+            #If price is within 5% of a resistance level and bearish Doji or engulfing than SELL
                 for h in range(len(self.hdf.h_pct_change)):
-                    
-                    
-                    
-                    
-                    if (-0.05< self.hdf.h_pct_change[h] < 0): #or (self.secClose > self.emaI.Current.Value):
-                        #self.Debug(f" hdf pct: {self.hdf.h_pct_change[h]} ds: {self.DojiStarI.Current.Value}  e: {self.engulfingI.Current.Value  } day: {self.Time}")
+                
+                    if (-0.05< self.hdf.h_pct_change[h] < 0): 
+                        
                         if (self.engulfingI.Current.Value == -1.0) or (self.DojiStarI.Current.Value == -1.0) or (self.DojiI.Current.Value == 1.0):
                             self.SetHoldings(self.sec, 0.0)
                             #self.Debug(f"sold {self.Time}")
