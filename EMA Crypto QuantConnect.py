@@ -4,6 +4,7 @@ from QuantConnect.Indicators import *
 
 class PensiveGreenFly(QCAlgorithm):
 
+    #Algo constructor called once at start-up
     def Initialize(self):
         self.SetStartDate(2021, 1, 1)  
         self.SetCash(10000)  
@@ -22,14 +23,16 @@ class PensiveGreenFly(QCAlgorithm):
         self.TimeRules.Every(timedelta(hours=12)),
                  self.ordering)
     
+    #Data pipeline (updated when new data is passed) 
     def OnData(self, data):
         self.close = data[self.security].Close
         
         pass
 
-        
+    # Checks holdings and for price cross of 30 day ema (every 12 hours) 
     def ordering(self):
         
+        #Make sure indicator is ready
         if not self.emaI.IsReady:
             return
         
@@ -39,10 +42,6 @@ class PensiveGreenFly(QCAlgorithm):
         if (self.Portfolio[self.security].Quantity < 0.0001) :
             #if self.Portfolio.CashBook["USD"].Amount > 0:
             if self.Securities[self.security].Price > self.emaI.Current.Value:
-                self.Debug("Holdings:  " + str(self.Portfolio[self.security].Quantity))
-            
-                    
-           
                 self.SetHoldings(self.security, 1.0)
                 
                 self.Debug("bought:  " + str(self.Time) + " price:  " + str(self.close) + " EMA: " + str(self.emaI.Current.Value))  
